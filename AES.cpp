@@ -2,6 +2,9 @@
 #include "AES.h"
 #include "stdio.h"
 #include "stdlib.h"
+
+#define debug_GMAC
+
 // 问题：加解密明文密文不对称
 /***************************************************Test Data 11.8***************************************************************** *
 key = bd14f821d953ce230fa60774c6fc2398b059bef9d8bf61db0ee600489540a677
@@ -10,8 +13,6 @@ a  = c10018a0004781008006000000000000
 c  = A4E4EB35D68D0C84D032882D313AD4CC73D78B667B376109F8183CD2BFB60A4C
 t  = 2966 5498 17df 0a88 b48b 5bc4 aeb7 be6f
 p  = 51598bf2a93dd3e73a749b3a909bd4fb99e54c133a57363a66c0bfdf1e37754a
-
-
 *************************************************************************************************************************************/
 // c10018a0003b81008006000000000000
 // a80e0210000000000000000000000001
@@ -30,7 +31,7 @@ unsigned char input_Date1[32] = {0xA4, 0xE4, 0xEB, 0x35, 0xD6, 0x8D, 0x0C, 0x84,
 unsigned char input_Key[32] = {0xbd, 0x14, 0xf8, 0x21, 0xd9, 0x53, 0xce, 0x23, 0x0f, 0xa6, 0x07, 0x74, 0xc6, 0xfc, 0x23, 0x98,
 							   0xb0, 0x59, 0xbe, 0xf9, 0xd8, 0xbf, 0x61, 0xdb, 0x0e, 0xe6, 0x00, 0x48, 0x95, 0x40, 0xa6, 0x77};
 unsigned char input_Key1[32] = {0x77, 0xa6, 0x40, 0x95, 0x48, 0x00, 0xe6, 0xe9, 0xdb, 0x61, 0xbf, 0xd8, 0xf9, 0xbe, 0x59, 0xb0,
-							   0x98, 0x23, 0xfc, 0xc6, 0x74, 0x07, 0xa6, 0x0f, 0x23, 0xce, 0x53, 0xd9, 0x21, 0xf8, 0x14, 0xbd};
+								0x98, 0x23, 0xfc, 0xc6, 0x74, 0x07, 0xa6, 0x0f, 0x23, 0xce, 0x53, 0xd9, 0x21, 0xf8, 0x14, 0xbd};
 // e000 101d 33c1 8200 0a29 0202 07f6  32d4
 // c10018a000478100800600000000000000010001
 unsigned char Attach[20] = {0xc1, 0x00, 0x18, 0xa0, 0x00, 0x47, 0x81, 0x00, 0x80, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01};
@@ -44,7 +45,7 @@ unsigned char Y[4][8] = {0};
 unsigned char KK[4][60] = {0};
 unsigned char input_Key_Square[4][60];
 int i = 0, t = 0;
-#define debug_cmac
+
 /**
  * @brief transfer hex to binary
  * @param x: hex
@@ -420,36 +421,40 @@ void AES_Encrypted(unsigned char key[32], unsigned char input[16], unsigned char
 #ifdef debug_cmac_key
 	for (i = 0; i < 60; i++)
 	{
-		(i%4==0)?printf("\nkey[%d]=\n",i/4 ):i=i;
+		(i % 4 == 0) ? printf("\nkey[%d]=\n", i / 4) : i = i;
 		for (j = 0; j < 4; j++)
 		{
 			printf("%02x", input_Key_Square[j][i]);
 		}
-		
 	}
 #endif
+
 	Initial_Round(input, input_data, key);
-#ifdef debug_cmac
+
+#ifdef debug_CMAC
 	printf("\n1_RoundKey:\n");
 	for (i = 0; i < 16; i++)
 	{
 		printf("%02x", input_data[i]);
 	}
 #endif // DEBUG
+
 	for (i = 0; i < 13; i++)
 	{
 		ByteSub(input_data, output_ByteSub);
-#ifdef debug_cmac
+#ifdef debug_CMAC
 		printf("\nByteSub:\n");
-		for (j = 0; j < 16; j++)	
+		for (j = 0; j < 16; j++)
 		{
 			printf("%02x", output_ByteSub[j]);
 		}
 #endif // DEBUG
 		ShiftRow(output_ByteSub, output_ShiftRow);
-#ifdef debug_cmac
+
+#ifdef debug_CMAC
 		printf("\nShiftRow:\n");
-		for (j = 0; j < 4; j++)	{
+		for (j = 0; j < 4; j++)
+		{
 			for (k = 0; k < 4; k++)
 			{
 				printf("%02x", output_ShiftRow[k][j]);
@@ -457,10 +462,13 @@ void AES_Encrypted(unsigned char key[32], unsigned char input[16], unsigned char
 			printf("\n");
 		}
 #endif // DEBUG
+
 		MixColumn(output_ShiftRow, output_MixColumn);
-#ifdef debug_cmac
-		printf("\nMixColumn:\n");	
-		for (j = 0; j < 4; j++)	{
+
+#ifdef debug_CMAC
+		printf("\nMixColumn:\n");
+		for (j = 0; j < 4; j++)
+		{
 			for (k = 0; k < 4; k++)
 			{
 				printf("%02x", output_MixColumn[k][j]);
@@ -468,10 +476,13 @@ void AES_Encrypted(unsigned char key[32], unsigned char input[16], unsigned char
 			printf("\n");
 		}
 #endif // DEBUG
+
 		AddRoundKey(output_MixColumn, output_AddRoundKey, i);
-#ifdef debug_cmac
-		printf("\nAddRoundKey:\n");	
-		for (j = 0; j < 4; j++)	{
+
+#ifdef debug_CMAC
+		printf("\nAddRoundKey:\n");
+		for (j = 0; j < 4; j++)
+		{
 			for (k = 0; k < 4; k++)
 			{
 				printf("%02x", output_AddRoundKey[k][j]);
@@ -479,6 +490,7 @@ void AES_Encrypted(unsigned char key[32], unsigned char input[16], unsigned char
 			printf("\n");
 		}
 #endif // DEBUG
+
 		for (j = 0; j < 4; j++)
 		{
 			for (k = 0; k < 4; k++)
@@ -488,17 +500,21 @@ void AES_Encrypted(unsigned char key[32], unsigned char input[16], unsigned char
 		}
 	}
 	ByteSub(input_data, output_ByteSub);
-#ifdef debug_cmac
+
+#ifdef debug_CMAC
 	printf("\nlast_ByteSub:\n");
-	for (j = 0; j < 16; j++)	
+	for (j = 0; j < 16; j++)
 	{
 		printf("%02x", output_ByteSub[j]);
 	}
 #endif
-	ShiftRow(output_ByteSub, output_ShiftRow); 
-#ifdef debug_cmac
+
+	ShiftRow(output_ByteSub, output_ShiftRow);
+
+#ifdef debug_CMAC
 	printf("\nlast_ShiftRow:\n");
-	for (j = 0; j < 4; j++)	{
+	for (j = 0; j < 4; j++)
+	{
 		for (k = 0; k < 4; k++)
 		{
 			printf("%02x", output_ShiftRow[k][j]);
@@ -506,10 +522,13 @@ void AES_Encrypted(unsigned char key[32], unsigned char input[16], unsigned char
 		printf("\n");
 	}
 #endif
+
 	AddRoundKey(output_ShiftRow, output, 13);
-#ifdef debug_cmac
+
+#ifdef debug_CMAC
 	printf("\nlast_AddRoundKey:\n");
-	for (j = 0; j < 4; j++)	{
+	for (j = 0; j < 4; j++)
+	{
 		for (k = 0; k < 4; k++)
 		{
 			printf("%02x", output[k][j]);
@@ -686,8 +705,6 @@ void Multiple_128(unsigned char A[16], unsigned char B[16], unsigned char X[16])
 	}
 }
 
-
-
 void AES_CMAC(unsigned char key[32], unsigned char input[], int len, unsigned char output[16])
 {
 	unsigned char K1[16], K2[16];
@@ -837,7 +854,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	memcpy(Attach_2, attach + 16, len_A % 16);
 	memset(Attach_2 + len_A, 0x00, 16 - (len_A % 16));
 
-#ifdef debug_Din
+#ifdef debug_GMAC
 	printf("\nlen_data = %d\n", len_data);
 	printf("len_A = %d\n", len_A);
 	printf("CC = %d\n", CC);
@@ -955,14 +972,15 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	}
 	printf("\n");
 #endif
-	/**************************************************end*******************************************************/
+/**************************************************end*******************************************************/
 
-	/********************************************compute GMAC****************************************************/
+/********************************************compute GMAC****************************************************/
 	// 2-1. H = CIPH(K, 0)
 	AES_Encrypted(key, result, Cipher_tmp);
 	for (j = 0; j < 4; j++) // transform 2 dimension array to 1 dimension array for H
 		for (k = 0; k < 4; k++)
 			H[j * 4 + k] = Cipher_tmp[k][j];
+
 
 #ifdef debug_H
 	printf("H: \n");
@@ -1010,7 +1028,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 		}
 #ifdef debug_GMAC
 		printf("J incresment%d: \n", i + 1);
-		for(j = 0; j < 16; j++)
+		for (j = 0; j < 16; j++)
 			printf("0x%02X ,", J[j]);
 		printf("\n");
 #endif
@@ -1024,20 +1042,20 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 			}
 		}
 	}
+
 	memcpy(GMAC, result, 16);
+
 #ifdef debug_GMAC
 	printf("result: \n");
 	for (i = 0; i < 16 * (Din_Block_num + 3); i++)
 		printf("0x%02X ,", GMAC[i]);
 	printf("\n");
 #endif
-	/**************************************************end*******************************************************/
+/**************************************************end*******************************************************/
 }
 
 int main()
 {
-
-#if 1
 	unsigned char Encrypted_Result[4][4];
 	unsigned char Decrypt_Result[4][4];
 	unsigned char CMAC[16] = {0};
@@ -1050,8 +1068,6 @@ int main()
 	len_A = sizeof(Attach);
 	AES_CMAC(input_Key, input_Date, len_data, CMAC);
 	AES_GCM(input_Key, Attach, IV, input_Date, len_data, len_A, GCM, GMAC);
-
-#endif
 
 #ifdef debug_GCM
 	// 打印0x形式的GCM数据
@@ -1073,16 +1089,16 @@ int main()
 	printf("\n");
 #endif
 
-#ifdef debug_cmac
-	//打印0x形式的CMAC数据
-		printf("CMAC(0x):\n");
+#ifdef debug_CMAC
+	// 打印0x形式的CMAC数据
+	printf("CMAC(0x):\n");
 	for (t = 0; t < 16; t++)
 	{
 		printf("0x%02X, ", CMAC[t]);
 	}
 	printf("\n");
 
-	//打印联合CMAC数据
+	// 打印联合CMAC数据
 	printf("CMAC:\n");
 	for (t = 0; t < 16; t++)
 	{
