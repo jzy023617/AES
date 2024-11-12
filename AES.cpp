@@ -1039,7 +1039,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 
 	/**************************************************end*******************************************************/
 }
-
+ 
 int main()
 {
 	unsigned char Encrypted_Result[4][4];
