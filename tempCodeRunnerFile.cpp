@@ -1,1 +1,1 @@
-result
+		(i % 16 == 0) ? printf("\n0x%02X ,", Y_result
