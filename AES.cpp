@@ -8,8 +8,8 @@
 
 // c10018a0004781008006000000000000
 // a4e4eb35d68d0c84d032882d313ad4cc
-unsigned char input_Date[32] = {0xC1, 0x00, 0x18, 0xA0, 0x00, 0x47, 0x81, 0x00, 0x80, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-								0xA4, 0xe4, 0xeb, 0x35, 0xd6, 0x8d, 0x0c, 0x84, 0xd0, 0x32, 0x88, 0x2d, 0x31, 0x3a, 0xd4, 0xcc};
+unsigned char input_Date[31] = {0xC1, 0x00, 0x18, 0xA0, 0x00, 0x47, 0x81, 0x00, 0x80, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+								0xA4, 0xe4, 0xeb, 0x35, 0xd6, 0x8d, 0x0c, 0x84, 0xd0, 0x32, 0x88, 0x2d, 0x31, 0x3a, 0xd4};
 // A4E4EB35D68D0C84D032882D313AD4CC73D78B667B376109F8183CD2BFB60A4C
 unsigned char input_Date1[32] = {0xA4, 0xE4, 0xEB, 0x35, 0xD6, 0x8D, 0x0C, 0x84, 0xD0, 0x32, 0x88, 0x2D, 0x31, 0x3A, 0xD4, 0xCC,
 								 0x73, 0xD7, 0x8B, 0x66, 0x7B, 0x37, 0x61, 0x09, 0xF8, 0x18, 0x3C, 0xD2, 0xBF, 0xB6, 0x0A, 0x4C};
@@ -825,16 +825,6 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	CC = len_data * 8;
 	AA = len_A * 8;
 	Din_Block_num = (len_data + 15) / 16;
-#ifdef debug_GMAC
-	printf("\nattach: \n");
-	for (i = 0; i < len_A; i++)
-	{
-		if (i % 16 == 0)
-			printf("\n");
-		printf("0x%02x, ", attach[i]);
-	}
-	printf("\n");
-#endif
 
 	for (i = 7; i >= 0; i--)
 	{
@@ -854,7 +844,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	memcpy(Attach_2, attach + 16, len_A % 16);
 	memset(Attach_2 + len_A % 16, 0x00, 16 - (len_A % 16));
 
-#ifdef debug_GMAC
+#ifdef debug_Din
 	printf("\nlen_data = %d\n", len_data);
 	printf("len_A = %d\n", len_A);
 	printf("CC = %d\n", CC);
@@ -885,14 +875,14 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	printf("\n");
 #endif
 
-/********************************************compute GCM*****************************************************/
+	/********************************************compute GCM*****************************************************/
 	//  C = GCTR(J,P,K)
 	//  note: CIPHER = MSBlen_data(output)
 	memcpy(J, IV, 12);
 	memset(J + 12, 0x00, 3);
 	J[15] = 0x01;
 
-#ifdef debug_J0
+#ifdef debug_GCM_J
 	printf("J0: \n");
 	for (i = 0; i < 16; i++)
 		printf("0x%02X ,", J[i]);
@@ -913,7 +903,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 				}
 			}
 
-#ifdef debug_GCM
+#ifdef debug_EY0
 			printf("EY0%d: \n", i + 1);
 			for (j = 0; j < 16; j++)
 				printf("0x%02X ,", EY0[j]);
@@ -932,7 +922,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 				}
 			}
 
-#ifdef debug_GCM
+#ifdef debug_GCM_Y
 			printf("Y%d: \n", i + 1);
 			for (j = 0; j < 16; j++)
 				printf("0x%02X ,", output[j]);
@@ -962,9 +952,9 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	// padding GCM to complete block
 	memset(output + len_data, 0x00, 16 - (len_data % 16));
 
-#ifdef debug_GCM
+#ifdef debug_GCM_CIPHER
 	printf("CIPHERTEXT: ");
-	for (i = 0; i < 48; i++)
+	for (i = 0; i < 16 * Din_Block_num; i++)
 	{
 		if (i % 16 == 0)
 			printf("\n");
@@ -991,19 +981,19 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	// 2-2. GHASH(A, H)
 	Multiple_128(Attach_1, H, Y_result); // A1 * H = Y1
 
-#ifdef debug_GMAC
+#ifdef debug_GMAC_Y
 	printf("Y1: ");
 	for (i = 0; i < 16; i++)
 		(i % 16 == 0) ? printf("\n0x%02X ,", Y_result[i]) : printf("0x%02X ,", Y_result[i]);
 #endif
 
-	if(len_A > 16) 
+	if (len_A > 16)
 	{
 		xor_128(Attach_2, Y_result, xor_tmp);
 		Multiple_128(xor_tmp, H, Y_result); //(A2 ^ Y1) * H = Y2
 	}
 
-#ifdef debug_GMAC
+#ifdef debug_GMAC_Y
 	printf("Y2: ");
 	for (i = 0; i < 16; i++)
 		(i % 16 == 0) ? printf("\n0x%02X ,", Y_result[i]) : printf("0x%02X ,", Y_result[i]);
@@ -1015,7 +1005,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 		xor_128(output + i * 16, Y_result, xor_tmp);
 		Multiple_128(xor_tmp, H, Y_result);
 
-#ifdef debug_GMAC
+#ifdef debug_GMAC_Y
 		printf("Y%d: ", i + 3);
 		for (j = 0; j < 16; j++)
 			(j % 16 == 0) ? printf("\n0x%02X ,", Y_result[j]) : printf("0x%02X ,", Y_result[j]);
@@ -1026,7 +1016,7 @@ void AES_GCM(unsigned char key[32], unsigned char attach[20], unsigned char IV[1
 	xor_128(Length, Y_result, xor_tmp);
 	Multiple_128(xor_tmp, H, Y_result); // (len ^ Yn+2) * H = Yn+3
 
-#ifdef debug_GMAC
+#ifdef debug_GMAC_Y
 	printf("Y%d: ", i + 3);
 	for (j = 0; j < 16; j++)
 		(j % 16 == 0) ? printf("\n0x%02X ,", Y_result[j]) : printf("0x%02X ,", Y_result[j]);
